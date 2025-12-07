@@ -1,16 +1,14 @@
-# backend/langchain_oracle.py
 import os
-from langchain import LLMChain, PromptTemplate
-from langchain.chat_models import ChatOpenAI  # ou outro LLM compatível
+from langchain_core.prompts import PromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+from langchain_openai import ChatOpenAI
 from typing import Dict
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-# Inicialize o LLM conforme sua conta/provedor. Ajuste model/temperature conforme disponível.
 llm = ChatOpenAI(temperature=0.8, model="gpt-4o-mini")
 
 class OraclePipeline:
     def __init__(self):
-        # 1) Template para combinar textos
         self.combine_template = PromptTemplate(
             input_variables=["user", "wiki_signo", "wiki_time", "wiki_cidade", "artist_info"],
             template=(
@@ -23,9 +21,8 @@ class OraclePipeline:
                 "Combine tudo num único documento coerente, mantendo citações das partes originais (cite as fontes em linhas com 'Fonte: ...')."
             )
         )
-        self.combine_chain = LLMChain(llm=llm, prompt=self.combine_template, output_key="combined_doc")
+        self.combine_chain = self.combine_template | llm
 
-        # 2) NER via LLM (sem spaCy)
         self.ner_template = PromptTemplate(
             input_variables=["combined_doc"],
             template=(
@@ -36,9 +33,8 @@ class OraclePipeline:
                 "Saída JSON estrita (apenas JSON):"
             )
         )
-        self.ner_chain = LLMChain(llm=llm, prompt=self.ner_template, output_key="ner_json")
+        self.ner_chain = self.ner_template | llm
 
-        # 3) Keywords via LLM
         self.keywords_template = PromptTemplate(
             input_variables=["combined_doc"],
             template=(
@@ -48,9 +44,8 @@ class OraclePipeline:
                 "Saída JSON:"
             )
         )
-        self.keywords_chain = LLMChain(llm=llm, prompt=self.keywords_template, output_key="keywords_json")
+        self.keywords_chain = self.keywords_template | llm
 
-        # 4) Classificação via LLM (taxonomia criativa)
         self.classif_template = PromptTemplate(
             input_variables=["combined_doc"],
             template=(
@@ -63,9 +58,8 @@ class OraclePipeline:
                 "Saída JSON:"
             )
         )
-        self.classif_chain = LLMChain(llm=llm, prompt=self.classif_template, output_key="classification_json")
+        self.classif_chain = self.classif_template | llm
 
-        # 5) Previsão final (oráculo)
         self.prediction_template = PromptTemplate(
             input_variables=["combined_doc", "keywords_json", "ner_json", "classification_json", "user"],
             template=(
@@ -80,37 +74,28 @@ class OraclePipeline:
                 "Document:\n{combined_doc}\n\nNer JSON:\n{ner_json}\n\nKeywords JSON:\n{keywords_json}\n\nClassificação JSON:\n{classification_json}\n\nUser:\n{user}\n\nSaída JSON com chaves: prediction (string com quebras de linha), explanation (string)."
             )
         )
-        self.pred_chain = LLMChain(llm=llm, prompt=self.prediction_template, output_key="prediction_json")
+        self.pred_chain = self.prediction_template | llm
 
     def run_pipeline(self, inputs: Dict):
-        # 1. Combine
-        combined = self.combine_chain.run(
-            user=inputs["user"],
-            wiki_signo=inputs["wiki_signo"],
-            wiki_time=inputs["wiki_time"],
-            wiki_cidade=inputs["wiki_cidade"],
-            artist_info=inputs["artist_info"]
-        )
+        combined = self.combine_chain.invoke({
+            "user": inputs["user"],
+            "wiki_signo": inputs["wiki_signo"],
+            "wiki_time": inputs["wiki_time"],
+            "wiki_cidade": inputs["wiki_cidade"],
+            "artist_info": inputs["artist_info"]
+        }).content
 
-        # 2. NER (via LLM)
-        ner = self.ner_chain.run(combined_doc=combined)
+        ner = self.ner_chain.invoke({"combined_doc": combined}).content
+        kws = self.keywords_chain.invoke({"combined_doc": combined}).content
+        cls = self.classif_chain.invoke({"combined_doc": combined}).content
+        pred = self.pred_chain.invoke({
+            "combined_doc": combined,
+            "keywords_json": kws,
+            "ner_json": ner,
+            "classification_json": cls,
+            "user": inputs["user"]
+        }).content
 
-        # 3. Keywords
-        kws = self.keywords_chain.run(combined_doc=combined)
-
-        # 4. Classification
-        cls = self.classif_chain.run(combined_doc=combined)
-
-        # 5. Prediction
-        pred = self.pred_chain.run(
-            combined_doc=combined,
-            keywords_json=kws,
-            ner_json=ner,
-            classification_json=cls,
-            user=inputs["user"]
-        )
-
-        # Retorna resultados como texto bruto (LLM outputs). O frontend exibe.
         return {
             "combined_doc": combined,
             "ner_json": ner,
