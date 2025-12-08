@@ -12,13 +12,13 @@ class OraclePipeline:
         self.combine_template = PromptTemplate(
             input_variables=["user", "wiki_signo", "wiki_time", "wiki_cidade", "artist_info"],
             template=(
-                "Você é um oráculo poético. Recebeu as seguintes informações (texto bruto) e deve produzir saídas intermediárias.\n\n"
+                "Você é um oráculo. Recebeu as seguintes informações (texto bruto) e deve produzir previsoes sobre o futuro do usuario.\n\n"
                 "Usuário:\n{user}\n\n"
-                "Resumo - Signo:\n{wiki_signo}\n\n"
-                "Resumo - Time:\n{wiki_time}\n\n"
-                "Resumo - Cidade:\n{wiki_cidade}\n\n"
+                "- Signo:\n{wiki_signo}\n\n"
+                "- Time:\n{wiki_time}\n\n"
+                "- Cidade:\n{wiki_cidade}\n\n"
                 "Info - Artista (Spotify):\n{artist_info}\n\n"
-                "Combine tudo num único documento coerente, mantendo citações das partes originais (cite as fontes em linhas com 'Fonte: ...')."
+                "Combine tudo num único documento coerente."
             )
         )
         self.combine_chain = self.combine_template | llm
@@ -63,7 +63,7 @@ class OraclePipeline:
         self.prediction_template = PromptTemplate(
             input_variables=["combined_doc", "keywords_json", "ner_json", "classification_json", "user"],
             template=(
-                "Você é o Oráculo Estocástico: gere uma PREVISÃO FINAL fictícia, mística, humorística e poética para o usuário. "
+                "Você é o Oráculo Estocástico: gere uma PREVISÃO sobre a vida do usuario que seja fictícia, mística e humorística para o usuário. "
                 "Use todas as informações a seguir: documento combinado, entidades extraídas, palavras-chave e classificações. "
                 "A previsão deve:\n"
                 "- ser claramente sinalizada como IMAGINÁRIA e para entretenimento\n"
