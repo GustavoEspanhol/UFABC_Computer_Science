@@ -74,3 +74,7 @@ async def generate(user: UserInput):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/")
+async def root():
+    return {"message": "Backend do Oráculo Estocástico está funcionando!"}
