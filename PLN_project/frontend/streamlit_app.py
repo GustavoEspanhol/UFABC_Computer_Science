@@ -5,12 +5,12 @@ import os
 
 BACKEND_URL = os.getenv("ORACLE_BACKEND_URL", "http://localhost:8000")
 
-st.set_page_config(page_title="Oráculo Estocástico", page_icon="🔮", layout="centered")
+st.set_page_config(page_title="Oráculo AI", page_icon="🔮", layout="centered")
 
 st.markdown(
     """
     <div style='text-align:center;'>
-        <h1 style='font-family:serif; color: #5b2c6f;'>🔮 Oráculo Estocástico</h1>
+        <h1 style='font-family:serif; color: #5b2c6f;'>🔮 Oráculo AI</h1>
         <p style='color:#6c757d;'>Previsor Fictício do Futuro — entretenimento baseado em textos reais</p>
     </div>
     """,

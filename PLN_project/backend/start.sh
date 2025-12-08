@@ -4,7 +4,7 @@
 # chmod +x start.sh
 
 # Inicia o backend (FastAPI) com uvicorn em segundo plano
-python3 app.py &
+uvicorn app:app --reload --host 0.0.0.0 --port 8000 &
 
 # Navega para o diretório do frontend
 cd ../frontend
