@@ -9,8 +9,5 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8000 &
 # Navega para o diretório do frontend
 cd ../frontend
 
-# Garante que o Streamlit esteja instalado
-pip install streamlit
-
 # Inicia o frontend (Streamlit)
 streamlit run streamlit_app.py
